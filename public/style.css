@@ -1,0 +1,14 @@
+button {
+    display: block;
+    margin: 10px auto;
+    padding: 10px 50px;
+    border: none;
+    background-color: #2980b9;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+h2 {
+    text-align: center;
+}
