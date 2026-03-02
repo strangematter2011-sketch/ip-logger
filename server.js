@@ -61,6 +61,12 @@ app.post("/save-ip", (req, res) => {
     }
 });
 app.get("/ips", (req, res) => {
+
+    if (req.query.password !== "mypassword") {
+        res.send("Access denied");
+        return;
+    }
+
     const ips = readIPs();
 
     let rows = ips.map(entry => `
