@@ -26,21 +26,28 @@ function readIPs() {
     }
 }
 
-// Save IP
+// Save IP + Name
 app.post("/save-ip", (req, res) => {
     try {
-        const ip = req.body.ip;
-        if (!ip) {
-            return res.status(400).send("No IP provided");
+        const { name, ip } = req.body;
+
+        if (!name || !ip) {
+            return res.status(400).send("Missing name or IP");
         }
 
         const ips = readIPs();
-        ips.push(ip);
+
+        ips.push({
+            name: name,
+            ip: ip,
+            time: new Date().toISOString()
+        });
 
         fs.writeFileSync(filePath, JSON.stringify(ips, null, 2));
 
-        console.log("Saved IP:", ip);
-        res.send("IP saved");
+        console.log("Saved:", name, ip);
+        res.send("Saved successfully");
+
     } catch (err) {
         console.error("Error saving IP:", err);
         res.status(500).send("Server error");
