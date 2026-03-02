@@ -26,7 +26,6 @@ function readIPs() {
     }
 }
 
-// Save IP + Name
 app.post("/save-ip", (req, res) => {
     try {
         const { name, ip } = req.body;
@@ -37,9 +36,17 @@ app.post("/save-ip", (req, res) => {
 
         const ips = readIPs();
 
+        // 🔎 Check for duplicate IP
+        const existing = ips.find(entry => entry.ip === ip);
+
+        if (existing) {
+            console.log("Duplicate IP skipped:", ip);
+            return res.send("IP already logged");
+        }
+
         ips.push({
-            name: name,
-            ip: ip,
+            name,
+            ip,
             time: new Date().toISOString()
         });
 
@@ -53,7 +60,6 @@ app.post("/save-ip", (req, res) => {
         res.status(500).send("Server error");
     }
 });
-
 // View all IPs
 app.get("/ips", (req, res) => {
     try {
