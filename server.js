@@ -60,17 +60,58 @@ app.post("/save-ip", (req, res) => {
         res.status(500).send("Server error");
     }
 });
-// View all IPs
 app.get("/ips", (req, res) => {
-    try {
-        const ips = readIPs();
-        res.json(ips);
-    } catch (err) {
-        console.error("Error fetching IPs:", err);
-        res.status(500).send("Server error");
-    }
-});
+    const ips = readIPs();
 
+    let rows = ips.map(entry => `
+        <tr>
+            <td>${entry.name}</td>
+            <td>${entry.ip}</td>
+            <td>${new Date(entry.time).toLocaleString()}</td>
+        </tr>
+    `).join("");
+
+    res.send(`
+        <html>
+        <head>
+            <title>IP Dashboard</title>
+            <style>
+                body {
+                    font-family: Arial;
+                    background: #111;
+                    color: white;
+                    padding: 20px;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+                th, td {
+                    padding: 10px;
+                    border: 1px solid #444;
+                }
+                th {
+                    background: #222;
+                }
+                tr:nth-child(even) {
+                    background: #1a1a1a;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>IP Dashboard</h1>
+            <table>
+                <tr>
+                    <th>Name</th>
+                    <th>IP</th>
+                    <th>Time</th>
+                </tr>
+                ${rows}
+            </table>
+        </body>
+        </html>
+    `);
+});
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
