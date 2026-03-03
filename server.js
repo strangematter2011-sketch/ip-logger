@@ -1,32 +1,38 @@
 const express = require("express");
 const path = require("path");
-const fs = require("fs");
+const mongoose = require("mongoose");
 
 const app = express();
 
+// Middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-const filePath = path.join(__dirname, "ips.json");
+// ==========================
+// MongoDB Connection
+// ==========================
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log("Connected to MongoDB"))
+    .catch(err => console.error("MongoDB connection error:", err));
 
-// ✅ Ensure ips.json exists
-if (!fs.existsSync(filePath)) {
-    fs.writeFileSync(filePath, JSON.stringify([], null, 2));
-}
-
-// Helper function to safely read IPs
-function readIPs() {
-    try {
-        const data = fs.readFileSync(filePath, "utf8");
-        return JSON.parse(data);
-    } catch (err) {
-        console.error("Error reading ips.json. Resetting file.", err);
-        fs.writeFileSync(filePath, JSON.stringify([], null, 2));
-        return [];
+// ==========================
+// Schema + Model
+// ==========================
+const ipSchema = new mongoose.Schema({
+    name: String,
+    ip: String,
+    time: {
+        type: Date,
+        default: Date.now
     }
-}
+});
 
-app.post("/save-ip", (req, res) => {
+const IP = mongoose.model("IP", ipSchema);
+
+// ==========================
+// Save IP Route
+// ==========================
+app.post("/save-ip", async (req, res) => {
     try {
         const { name, ip } = req.body;
 
@@ -34,23 +40,16 @@ app.post("/save-ip", (req, res) => {
             return res.status(400).send("Missing name or IP");
         }
 
-        const ips = readIPs();
-
         // 🔎 Check for duplicate IP
-        const existing = ips.find(entry => entry.ip === ip);
+        const existing = await IP.findOne({ ip });
 
         if (existing) {
             console.log("Duplicate IP skipped:", ip);
             return res.send("IP already logged");
         }
 
-        ips.push({
-            name,
-            ip,
-            time: new Date().toISOString()
-        });
-
-        fs.writeFileSync(filePath, JSON.stringify(ips, null, 2));
+        const newEntry = new IP({ name, ip });
+        await newEntry.save();
 
         console.log("Saved:", name, ip);
         res.send("Saved successfully");
@@ -60,64 +59,74 @@ app.post("/save-ip", (req, res) => {
         res.status(500).send("Server error");
     }
 });
-app.get("/ips", (req, res) => {
+
+// ==========================
+// View IPs (Password Protected)
+// ==========================
+app.get("/ips", async (req, res) => {
 
     if (req.query.password !== "mypassword") {
-        res.send("Access denied");
-        return;
+        return res.send("Access denied");
     }
 
-    const ips = readIPs();
+    try {
+        const ips = await IP.find().sort({ time: -1 });
 
-    let rows = ips.map(entry => `
-        <tr>
-            <td>${entry.name}</td>
-            <td>${entry.ip}</td>
-            <td>${new Date(entry.time).toLocaleString()}</td>
-        </tr>
-    `).join("");
+        let rows = ips.map(entry => `
+            <tr>
+                <td>${entry.name}</td>
+                <td>${entry.ip}</td>
+                <td>${new Date(entry.time).toLocaleString()}</td>
+            </tr>
+        `).join("");
 
-    res.send(`
-        <html>
-        <head>
-            <title>IP Dashboard</title>
-            <style>
-                body {
-                    font-family: Arial;
-                    background: #111;
-                    color: white;
-                    padding: 20px;
-                }
-                table {
-                    width: 100%;
-                    border-collapse: collapse;
-                }
-                th, td {
-                    padding: 10px;
-                    border: 1px solid #444;
-                }
-                th {
-                    background: #222;
-                }
-                tr:nth-child(even) {
-                    background: #1a1a1a;
-                }
-            </style>
-        </head>
-        <body>
-            <h1>IP Dashboard</h1>
-            <table>
-                <tr>
-                    <th>Name</th>
-                    <th>IP</th>
-                    <th>Time</th>
-                </tr>
-                ${rows}
-            </table>
-        </body>
-        </html>
-    `);
+        res.send(`
+            <html>
+            <head>
+                <title>IP Dashboard</title>
+                <style>
+                    body {
+                        font-family: Arial;
+                        background: #111;
+                        color: white;
+                        padding: 20px;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                    }
+                    th, td {
+                        padding: 10px;
+                        border: 1px solid #444;
+                    }
+                    th {
+                        background: #222;
+                    }
+                    tr:nth-child(even) {
+                        background: #1a1a1a;
+                    }
+                </style>
+            </head>
+            <body>
+                <h1>IP Dashboard</h1>
+                <table>
+                    <tr>
+                        <th>Name</th>
+                        <th>IP</th>
+                        <th>Time</th>
+                    </tr>
+                    ${rows}
+                </table>
+            </body>
+            </html>
+        `);
+
+    } catch (err) {
+        console.error("Error fetching IPs:", err);
+        res.status(500).send("Server error");
+    }
 });
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

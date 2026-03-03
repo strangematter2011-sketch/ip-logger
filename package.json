@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/strangematter2011-sketch/ip-logger#readme",
   "dependencies": {
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "mongoose": "^9.2.3"
   }
 }
