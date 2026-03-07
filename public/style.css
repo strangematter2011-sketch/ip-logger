@@ -10,8 +10,9 @@ body {
 .container {
   display: flex;
   flex-direction: column;
-  gap: 30px;
   align-items: center;
+  gap: 30px;
+  padding: 40px;
 }
 button {
     display: block;
@@ -26,6 +27,7 @@ button {
 
 h2 {
     text-align: center;
+    margin: 0;
 }
 #nameInput {
   width: 280px;
