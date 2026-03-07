@@ -10,7 +10,7 @@ body {
 .container {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 30px;
   align-items: center;
 }
 button {
